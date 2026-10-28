@@ -1,0 +1,22 @@
+{
+  "name": "nivan-crackers-order-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Responsive customer ordering and invoice app for Nivan Crackers",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=20.18.1"
+  },
+  "dependencies": {
+    "better-sqlite3": "^13.0.3",
+    "cheerio": "^1.1.2",
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.1.0",
+    "helmet": "^8.1.0",
+    "nodemailer": "^10.2.1"
+  }
+}

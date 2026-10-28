@@ -1,0 +1,38 @@
+services:
+  - type: web
+    name: nivan-crackers-order-app
+    runtime: node
+    plan: starter
+    buildCommand: npm ci
+    startCommand: npm start
+    disk:
+      name: nivan-order-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DB_PATH
+        value: /var/data/orders.sqlite
+      - key: DELIVERY_CHARGE
+        value: "0"
+      - key: ALLOW_WEAK_ADMIN_PASSWORD
+        value: "false"
+      - key: ADMIN_USER
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_SECURE
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: ORDER_FROM_EMAIL
+        sync: false
+      - key: ORDER_RECIPIENTS
+        sync: false
