@@ -14,11 +14,17 @@ const PORT = Number(process.env.PORT) || 3000;
 const ROOT = __dirname;
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 const ALLOW_WEAK_ADMIN_PASSWORD = process.env.ALLOW_WEAK_ADMIN_PASSWORD === 'true';
+const TRUST_PROXY_HOPS = process.env.TRUST_PROXY_HOPS === undefined ? 0 : Number(process.env.TRUST_PROXY_HOPS);
 const DELIVERY_CHARGE = process.env.DELIVERY_CHARGE === undefined ? 0 : Number(process.env.DELIVERY_CHARGE);
 const DB_PATH = process.env.DB_PATH ? path.resolve(ROOT, process.env.DB_PATH) : path.join(ROOT, 'data', 'orders.sqlite');
 const ADMIN_USER = process.env.ADMIN_USER || '';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
 const ORDER_STATUSES = ['unprocessed', 'order accepted', 'Ready to deliver', 'completed'];
+
+if (!Number.isInteger(TRUST_PROXY_HOPS) || TRUST_PROXY_HOPS < 0 || TRUST_PROXY_HOPS > 10) {
+  throw new Error('TRUST_PROXY_HOPS must be an integer between 0 and 10.');
+}
+app.set('trust proxy', TRUST_PROXY_HOPS);
 
 fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
 const database = new Database(DB_PATH);

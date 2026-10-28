@@ -12,6 +12,8 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: TRUST_PROXY_HOPS
+        value: "1"
       - key: DB_PATH
         value: /var/data/orders.sqlite
       - key: DELIVERY_CHARGE

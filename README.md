@@ -23,6 +23,7 @@ The app requires a Node.js host and persistent storage; GitHub Pages cannot run 
 1. Set `ORDER_RECIPIENTS` in `.env` to the fixed business recipient list, comma-separated if there are multiple recipients. Addresses are controlled on the server and cannot be supplied by a browser request.
 2. Set `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, and `ORDER_FROM_EMAIL` in `.env`. Use the SMTP credentials from your mail provider. For Gmail, use `smtp.gmail.com`, port `587`, `SMTP_SECURE=false`, and an app password; do not use your normal account password.
 3. Set `DELIVERY_CHARGE` in `.env` to the fixed whole-rupee delivery charge (defaults to `0`). It is served to the page for display and independently applied by the API; browser requests cannot change it.
+	Set `TRUST_PROXY_HOPS` to the exact number of trusted reverse proxies in front of the app; the included Render config uses `1`.
 4. For local testing only, set `ADMIN_USER=admin`, `ADMIN_PASSWORD=admin@123`, and `ALLOW_WEAK_ADMIN_PASSWORD=true` in the ignored `.env`. Never commit these values. In production, set `NODE_ENV=production`, use a unique password with at least 16 characters, and serve the admin page over HTTPS. Production mode rejects weak passwords even if the local-only flag is set.
 5. Restart the server. `GET /api/health` reports whether SMTP and recipients are configured without revealing credentials or recipient addresses.
 
@@ -44,4 +45,4 @@ Customer data and selected products are validated in the browser and revalidated
 
 Use **Print invoice** to print. **Save as PDF** opens the browser print dialog; select **Save to PDF** (wording varies by browser) to download a PDF while retaining Tamil product names. The invoice is also shown on screen after a successful email send.
 
-The order endpoint has a basic per-IP rate limit. Configure a trusted proxy appropriately when deploying behind a reverse proxy so rate limiting sees the actual client IP. Validate delivery, tax, and applicable fireworks-sale regulations for your business before production use.
+The order endpoint has a basic per-IP rate limit. `TRUST_PROXY_HOPS` controls which forwarding headers Express trusts; set it to match the actual deployment proxy topology. Validate delivery, tax, and applicable fireworks-sale regulations for your business before production use.
