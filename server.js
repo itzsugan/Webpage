@@ -124,8 +124,8 @@ function safeEqual(left, right) {
 
 function adminConfigurationError() {
   if (!ADMIN_USER || !ADMIN_PASSWORD) return 'Set ADMIN_USER and ADMIN_PASSWORD in .env.';
-  if (ADMIN_PASSWORD.length < 16 && (IS_PRODUCTION || !ALLOW_WEAK_ADMIN_PASSWORD)) {
-    return 'Admin password must contain at least 16 characters.';
+  if (ADMIN_PASSWORD.length < 8 && (IS_PRODUCTION || !ALLOW_WEAK_ADMIN_PASSWORD)) {
+    return 'Admin password must contain at least 8 characters.';
   }
   if (!ADMIN_SESSION_SECRET || (IS_PRODUCTION && ADMIN_SESSION_SECRET.length < 32)) {
     return 'Set ADMIN_SESSION_SECRET to a random value of at least 32 characters.';
