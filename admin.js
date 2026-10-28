@@ -2,6 +2,12 @@ const ordersList = document.querySelector('#orders-list');
 const searchInput = document.querySelector('#orders-search');
 const alertBox = document.querySelector('#admin-alert');
 const orderCount = document.querySelector('#orders-count');
+const loginPanel = document.querySelector('#admin-login');
+const loginForm = document.querySelector('#admin-login-form');
+const loginMessage = document.querySelector('#login-message');
+const loginButton = document.querySelector('#admin-login-submit');
+const adminContent = document.querySelector('#admin-content');
+const logoutButton = document.querySelector('#admin-logout');
 const modal = new bootstrap.Modal(document.querySelector('#order-modal'));
 const orders = new Map();
 const statuses = ['unprocessed', 'order accepted', 'Ready to deliver', 'completed'];
@@ -30,6 +36,12 @@ function statusClass(status) {
 function showAlert(message, type) {
   alertBox.className = `alert alert-${type}`;
   alertBox.textContent = message;
+}
+
+function setAuthenticated(isAuthenticated) {
+  loginPanel.classList.toggle('d-none', isAuthenticated);
+  adminContent.classList.toggle('d-none', !isAuthenticated);
+  logoutButton.classList.toggle('d-none', !isAuthenticated);
 }
 
 function renderOrders() {
@@ -91,6 +103,11 @@ async function loadOrders() {
   } catch (error) {
     orderCount.textContent = 'Unavailable';
     ordersList.innerHTML = '<tr><td class="table-message" colspan="4">Order list unavailable.</td></tr>';
+    if (error.message.includes('(401)')) {
+      setAuthenticated(false);
+      loginMessage.textContent = 'Your session expired. Please sign in again.';
+      return;
+    }
     showAlert(`${error.message} Check the admin login and server configuration.`, 'danger');
   }
 }
@@ -147,4 +164,57 @@ searchInput.addEventListener('input', renderOrders);
 document.querySelector('#refresh-orders').addEventListener('click', loadOrders);
 document.querySelector('#print-order').addEventListener('click', () => window.print());
 
-loadOrders();
+loginForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  loginMessage.textContent = '';
+  if (!loginForm.reportValidity()) return;
+
+  loginButton.disabled = true;
+  try {
+    const formData = new FormData(loginForm);
+    const response = await fetch('/api/admin/login', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: formData.get('username'),
+        password: formData.get('password')
+      })
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || 'Sign in failed.');
+    loginForm.reset();
+    setAuthenticated(true);
+    await loadOrders();
+  } catch (error) {
+    loginMessage.textContent = error.message;
+  } finally {
+    loginButton.disabled = false;
+  }
+});
+
+logoutButton.addEventListener('click', async () => {
+  try {
+    await fetch('/api/admin/logout', { method: 'POST', credentials: 'same-origin' });
+  } finally {
+    orders.clear();
+    renderOrders();
+    setAuthenticated(false);
+    loginMessage.textContent = 'You have signed out.';
+  }
+});
+
+async function checkSession() {
+  try {
+    const response = await fetch('/api/admin/session', { credentials: 'same-origin' });
+    const result = await response.json().catch(() => ({}));
+    if (response.status === 401) return;
+    if (!response.ok) throw new Error(result.error || 'Admin sign-in is unavailable.');
+    setAuthenticated(true);
+    await loadOrders();
+  } catch (error) {
+    loginMessage.textContent = error.message;
+  }
+}
+
+checkSession();

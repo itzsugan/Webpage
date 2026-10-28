@@ -24,7 +24,7 @@ The app requires a Node.js host and persistent storage; GitHub Pages cannot run 
 2. Set `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, and `ORDER_FROM_EMAIL` in `.env`. Use the SMTP credentials from your mail provider. For Gmail, use `smtp.gmail.com`, port `587`, `SMTP_SECURE=false`, and an app password; do not use your normal account password.
 3. Set `DELIVERY_CHARGE` in `.env` to the fixed whole-rupee delivery charge (defaults to `0`). It is served to the page for display and independently applied by the API; browser requests cannot change it.
 	Set `TRUST_PROXY_HOPS` to the exact number of trusted reverse proxies in front of the app; the included Render config uses `1`.
-4. For local testing only, set `ADMIN_USER=admin`, `ADMIN_PASSWORD=admin@123`, and `ALLOW_WEAK_ADMIN_PASSWORD=true` in the ignored `.env`. Never commit these values. In production, set `NODE_ENV=production`, use a unique password with at least 16 characters, and serve the admin page over HTTPS. Production mode rejects weak passwords even if the local-only flag is set.
+4. For local testing only, set `ADMIN_USER=admin`, `ADMIN_PASSWORD=admin@123`, and `ALLOW_WEAK_ADMIN_PASSWORD=true` in the ignored `.env`. Never commit these values. In production, set `NODE_ENV=production`, use a unique password with at least 16 characters, configure `ADMIN_SESSION_SECRET` with at least 32 random characters, and serve the admin page over HTTPS. Production mode rejects weak passwords even if the local-only flag is set.
 5. Restart the server. `GET /api/health` reports whether SMTP and recipients are configured without revealing credentials or recipient addresses.
 
 Never commit `.env` or put SMTP credentials in `app.js`. In production, use your host's secret manager, serve the app over HTTPS, and configure the SMTP sender address for your domain.
@@ -35,7 +35,7 @@ The existing catalog in `index.html` is the sample product data (98 listed items
 
 ## Admin orders and backup
 
-Open `/admin` and sign in with `ADMIN_USER` / `ADMIN_PASSWORD`. New orders are assigned an order ID and saved to SQLite at `DB_PATH` (default `data/orders.sqlite`) before the server attempts email. Email failure does not discard an order; the customer sees that it was saved and the admin list records the email status. Admins can update status to `unprocessed`, `order accepted`, `Ready to deliver`, or `completed`; completed orders are highlighted. Select an order row to open its saved invoice.
+Open `/admin` and sign in using the page's username/password form. A signed, HttpOnly session cookie keeps the admin signed in for up to 12 hours; order APIs do not use browser-cached Basic Auth. New orders are assigned an order ID and saved to SQLite at `DB_PATH` (default `data/orders.sqlite`) before the server attempts email. Email failure does not discard an order; the customer sees that it was saved and the admin list records the email status. Admins can update status to `unprocessed`, `order accepted`, `Ready to deliver`, or `completed`; completed orders are highlighted. Select an order row to open its saved invoice.
 
 Back up the SQLite database regularly. For a live backup, use SQLite's backup API or stop the app before copying the database file; do not copy the database while its `-wal` file is active. The database and WAL files are excluded from Git.
 

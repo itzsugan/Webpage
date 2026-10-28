@@ -1,7 +1,7 @@
 require('dotenv').config();
 const path = require('node:path');
 const fs = require('node:fs');
-const { randomBytes, timingSafeEqual } = require('node:crypto');
+const { createHmac, randomBytes, timingSafeEqual } = require('node:crypto');
 const express = require('express');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
@@ -19,6 +19,9 @@ const DELIVERY_CHARGE = process.env.DELIVERY_CHARGE === undefined ? 0 : Number(p
 const DB_PATH = process.env.DB_PATH ? path.resolve(ROOT, process.env.DB_PATH) : path.join(ROOT, 'data', 'orders.sqlite');
 const ADMIN_USER = process.env.ADMIN_USER || '';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
+const ADMIN_SESSION_SECRET = process.env.ADMIN_SESSION_SECRET || (!IS_PRODUCTION ? randomBytes(32).toString('hex') : '');
+const ADMIN_SESSION_COOKIE = 'nivan_admin_session';
+const ADMIN_SESSION_DURATION = 12 * 60 * 60 * 1000;
 const ORDER_STATUSES = ['unprocessed', 'order accepted', 'Ready to deliver', 'completed'];
 
 if (!Number.isInteger(TRUST_PROXY_HOPS) || TRUST_PROXY_HOPS < 0 || TRUST_PROXY_HOPS > 10) {
@@ -93,7 +96,7 @@ app.use(express.json({ limit: '32kb' }));
 app.use('/api/send-order', rateLimit({ windowMs: 15 * 60 * 1000, limit: 20, standardHeaders: 'draft-7', legacyHeaders: false }));
 app.get('/', (_request, response) => response.sendFile(path.join(ROOT, 'index.html')));
 app.get('/index.html', (_request, response) => response.sendFile(path.join(ROOT, 'index.html')));
-app.get(['/admin', '/admin.html'], requireAdmin, (_request, response) => response.sendFile(path.join(ROOT, 'admin.html')));
+app.get(['/admin', '/admin.html'], (_request, response) => response.sendFile(path.join(ROOT, 'admin.html')));
 app.get(['/styles.css', '/app.js', '/admin.css', '/admin.js', '/header.png'], (request, response, next) => {
   express.static(ROOT, { dotfiles: 'ignore', index: false })(request, response, next);
 });
@@ -119,28 +122,40 @@ function safeEqual(left, right) {
   return leftBuffer.length === rightBuffer.length && timingSafeEqual(leftBuffer, rightBuffer);
 }
 
+function adminConfigurationError() {
+  if (!ADMIN_USER || !ADMIN_PASSWORD) return 'Set ADMIN_USER and ADMIN_PASSWORD in .env.';
+  if (ADMIN_PASSWORD.length < 16 && (IS_PRODUCTION || !ALLOW_WEAK_ADMIN_PASSWORD)) {
+    return 'Admin password must contain at least 16 characters.';
+  }
+  if (!ADMIN_SESSION_SECRET || (IS_PRODUCTION && ADMIN_SESSION_SECRET.length < 32)) {
+    return 'Set ADMIN_SESSION_SECRET to a random value of at least 32 characters.';
+  }
+  return '';
+}
+
+function createAdminSession() {
+  const expiresAt = Date.now() + ADMIN_SESSION_DURATION;
+  const nonce = randomBytes(16).toString('hex');
+  const payload = `${expiresAt}.${nonce}`;
+  const signature = createHmac('sha256', ADMIN_SESSION_SECRET).update(payload).digest('base64url');
+  return `${payload}.${signature}`;
+}
+
+function hasValidAdminSession(request) {
+  const encodedCookie = (request.headers.cookie || '').match(/(?:^|;\s*)nivan_admin_session=([A-Za-z0-9._-]+)/)?.[1];
+  if (!encodedCookie) return false;
+  const [expiresAtText, nonce, signature, ...extra] = encodedCookie.split('.');
+  if (!expiresAtText || !nonce || !signature || extra.length || !/^\d+$/.test(expiresAtText)) return false;
+  if (Number(expiresAtText) <= Date.now()) return false;
+  const payload = `${expiresAtText}.${nonce}`;
+  const expected = createHmac('sha256', ADMIN_SESSION_SECRET).update(payload).digest('base64url');
+  return safeEqual(signature, expected);
+}
+
 function requireAdmin(request, response, next) {
-  if (!ADMIN_USER || !ADMIN_PASSWORD || (ADMIN_PASSWORD.length < 16 && (IS_PRODUCTION || !ALLOW_WEAK_ADMIN_PASSWORD))) {
-    return response.status(503).send('Admin access is not configured. Set ADMIN_USER and ADMIN_PASSWORD in .env.');
-  }
-
-  const authorization = request.get('authorization') || '';
-  const match = authorization.match(/^Basic ([A-Za-z0-9+/]+=*)$/);
-  let username = '';
-  let password = '';
-  if (match) {
-    const credentials = Buffer.from(match[1], 'base64').toString('utf8');
-    const separator = credentials.indexOf(':');
-    if (separator >= 0) {
-      username = credentials.slice(0, separator);
-      password = credentials.slice(separator + 1);
-    }
-  }
-
-  if (!safeEqual(username, ADMIN_USER) || !safeEqual(password, ADMIN_PASSWORD)) {
-    response.set('WWW-Authenticate', 'Basic realm="Nivan order admin", charset="UTF-8"');
-    return response.status(401).send('Admin authentication required.');
-  }
+  const configurationError = adminConfigurationError();
+  if (configurationError) return response.status(503).json({ error: configurationError });
+  if (!hasValidAdminSession(request)) return response.status(401).json({ error: 'Please sign in to access orders.' });
   return next();
 }
 
@@ -175,6 +190,44 @@ app.get('/api/config', (_request, response) => {
 });
 
 app.use('/api/admin', rateLimit({ windowMs: 15 * 60 * 1000, limit: 100, standardHeaders: 'draft-7', legacyHeaders: false }));
+
+const loginRateLimit = rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, standardHeaders: 'draft-7', legacyHeaders: false });
+
+app.get('/api/admin/session', (request, response) => {
+  const configurationError = adminConfigurationError();
+  if (configurationError) return response.status(503).json({ error: configurationError });
+  if (!hasValidAdminSession(request)) return response.status(401).json({ authenticated: false });
+  return response.json({ authenticated: true });
+});
+
+app.post('/api/admin/login', loginRateLimit, (request, response) => {
+  const configurationError = adminConfigurationError();
+  if (configurationError) return response.status(503).json({ error: configurationError });
+  const username = typeof request.body?.username === 'string' ? request.body.username : '';
+  const password = typeof request.body?.password === 'string' ? request.body.password : '';
+  if (!safeEqual(username, ADMIN_USER) || !safeEqual(password, ADMIN_PASSWORD)) {
+    return response.status(401).json({ error: 'Username or password is incorrect.' });
+  }
+
+  response.cookie(ADMIN_SESSION_COOKIE, createAdminSession(), {
+    httpOnly: true,
+    secure: IS_PRODUCTION,
+    sameSite: 'strict',
+    maxAge: ADMIN_SESSION_DURATION,
+    path: '/'
+  });
+  return response.json({ authenticated: true });
+});
+
+app.post('/api/admin/logout', requireAdmin, (_request, response) => {
+  response.clearCookie(ADMIN_SESSION_COOKIE, {
+    httpOnly: true,
+    secure: IS_PRODUCTION,
+    sameSite: 'strict',
+    path: '/'
+  });
+  return response.json({ authenticated: false });
+});
 
 app.get('/api/admin/orders', requireAdmin, (_request, response) => {
   const rows = database.prepare('SELECT * FROM orders ORDER BY created_at DESC').all();

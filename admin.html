@@ -15,27 +15,45 @@
   <header class="admin-header">
     <div class="container admin-container d-flex align-items-center justify-content-between gap-3">
       <a class="admin-brand" href="/admin"><span class="admin-brand-mark">N</span><span><strong>NIVAN CRACKERS</strong><small>ORDER ADMINISTRATION</small></span></a>
-      <a class="store-link" href="/">Customer order page <span aria-hidden="true">↗</span></a>
+      <div class="admin-header-actions">
+        <button id="admin-logout" class="logout-button d-none" type="button">Sign out</button>
+        <a class="store-link" href="/">Customer order page <span aria-hidden="true">↗</span></a>
+      </div>
     </div>
   </header>
 
   <main class="container admin-container py-4 py-lg-5">
-    <div class="admin-title-row">
-      <div><p class="admin-eyebrow">OPERATIONS / ORDERS</p><h1>Order management</h1><p class="admin-subtitle">Review incoming orders and update fulfillment status.</p></div>
-      <button id="refresh-orders" class="btn refresh-button" type="button" title="Refresh orders">Refresh</button>
-    </div>
-
-    <div id="admin-alert" class="alert d-none" role="status" aria-live="polite"></div>
-
-    <section class="orders-panel" aria-labelledby="orders-heading">
-      <div class="orders-panel-heading"><div><h2 id="orders-heading">Orders</h2><span id="orders-count" class="orders-count">Loading…</span></div><label class="visually-hidden" for="orders-search">Search orders</label><input id="orders-search" class="form-control orders-search" type="search" placeholder="Search ID, name, or mobile"></div>
-      <div class="table-responsive">
-        <table class="table orders-table align-middle mb-0">
-          <thead><tr><th scope="col">Order ID</th><th scope="col">Customer</th><th scope="col">Mobile</th><th scope="col">Status</th></tr></thead>
-          <tbody id="orders-list"><tr><td class="table-message" colspan="4">Loading orders…</td></tr></tbody>
-        </table>
-      </div>
+    <section id="admin-login" class="login-panel" aria-labelledby="login-heading">
+      <p class="admin-eyebrow">STAFF ACCESS</p>
+      <h1 id="login-heading">Admin sign in</h1>
+      <p class="login-description">Enter your administrator credentials to view orders.</p>
+      <form id="admin-login-form" novalidate>
+        <div class="mb-3"><label class="form-label" for="admin-username">Username</label><input id="admin-username" class="form-control" name="username" type="text" autocomplete="username" required></div>
+        <div class="mb-3"><label class="form-label" for="admin-password">Password</label><input id="admin-password" class="form-control" name="password" type="password" autocomplete="current-password" required></div>
+        <p id="login-message" class="login-message" role="status" aria-live="polite"></p>
+        <button id="admin-login-submit" class="btn login-button w-100" type="submit">Sign in</button>
+      </form>
     </section>
+
+    <div id="admin-content" class="d-none">
+      <div class="admin-title-row">
+        <div><p class="admin-eyebrow">OPERATIONS / ORDERS</p><h1>Order management</h1><p class="admin-subtitle">Review incoming orders and update fulfillment status.</p></div>
+        <button id="refresh-orders" class="btn refresh-button" type="button" title="Refresh orders">Refresh</button>
+      </div>
+
+      <div id="admin-alert" class="alert d-none" role="status" aria-live="polite"></div>
+
+      <section class="orders-panel" aria-labelledby="orders-heading">
+        <div class="orders-panel-heading"><div><h2 id="orders-heading">Orders</h2><span id="orders-count" class="orders-count">Loading…</span></div><label class="visually-hidden" for="orders-search">Search orders</label><input id="orders-search" class="form-control orders-search" type="search" placeholder="Search ID, name, or mobile"></div>
+        <div class="table-responsive">
+          <table class="table orders-table align-middle mb-0">
+            <thead><tr><th scope="col">Order ID</th><th scope="col">Customer</th><th scope="col">Mobile</th><th scope="col">Status</th></tr></thead>
+            <tbody id="orders-list"><tr><td class="table-message" colspan="4">Loading orders…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+      </section>
+    </div>
   </main>
 
   <div class="modal fade" id="order-modal" tabindex="-1" aria-labelledby="order-modal-title" aria-hidden="true">

@@ -21,8 +21,21 @@ body { margin: 0; background: var(--admin-paper); color: var(--admin-ink); font-
 .admin-brand strong { font-size: 13px; }
 .admin-brand small { color: #e7cfa7; font-size: 9px; letter-spacing: 1px; }
 .admin-brand-mark { display: grid; width: 38px; aspect-ratio: 1; place-items: center; border: 1px solid var(--admin-gold); color: #f2d783; font-size: 21px; font-weight: 700; }
+.admin-header-actions { display: flex; align-items: center; gap: 18px; }
 .store-link { color: #f3d37e; font-size: 11px; text-decoration: none; }
 .store-link:hover { color: #fff; }
+.logout-button { padding: 6px 10px; border: 1px solid rgba(243,211,126,.65); background: transparent; color: #fff8e9; font-size: 10px; }
+.logout-button:hover { border-color: #f3d37e; background: rgba(243,211,126,.12); }
+.login-panel { width: min(100%, 410px); margin: clamp(24px, 9vh, 84px) auto; padding: 26px; border: 1px solid var(--admin-line); border-top: 4px solid var(--admin-red); background: var(--admin-surface); box-shadow: 0 12px 32px rgba(58,36,24,.08); }
+.login-panel h1 { margin: 0; font-family: 'Mukta Malar', sans-serif; font-size: 27px; font-weight: 800; }
+.login-description { margin: 6px 0 22px; color: var(--admin-muted); font-size: 11px; }
+.login-panel .form-label { margin-bottom: 5px; color: #56483f; font-size: 10px; font-weight: 600; }
+.login-panel .form-control { min-height: 42px; border-color: var(--admin-line); border-radius: 2px; font-size: 12px; }
+.login-panel .form-control:focus { border-color: var(--admin-red); box-shadow: 0 0 0 3px rgba(120,29,36,.1); }
+.login-button { min-height: 43px; border: 0; border-radius: 2px; background: var(--admin-red); color: #fff; font-size: 12px; font-weight: 600; }
+.login-button:hover, .login-button:focus { background: var(--admin-red-dark); color: #fff; }
+.login-button:disabled { opacity: .7; }
+.login-message { min-height: 18px; margin: 0 0 10px; color: #a52c31; font-size: 10px; }
 .admin-title-row { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 23px; }
 .admin-eyebrow { margin: 0 0 5px; color: var(--admin-red); font-size: 9px; font-weight: 700; letter-spacing: 1px; }
 .admin-title-row h1 { margin: 0; font-family: 'Mukta Malar', sans-serif; font-size: 30px; font-weight: 800; }
@@ -80,6 +93,9 @@ body { margin: 0; background: var(--admin-paper); color: var(--admin-ink); font-
 
 @media (max-width: 575.98px) {
   .admin-header .admin-container { min-height: 64px; }
+  .admin-header-actions { gap: 10px; }
+  .store-link { font-size: 10px; }
+  .login-panel { margin-top: 30px; padding: 21px; }
   .admin-title-row { align-items: start; }
   .admin-title-row h1 { font-size: 26px; }
   .admin-subtitle { max-width: 270px; }
